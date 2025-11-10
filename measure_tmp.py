@@ -1,0 +1,52 @@
+import pyrealsense2 as rs
+import numpy as np
+
+# カメラの設定
+conf = rs.config()
+# RGB - 解像度を下げる
+conf.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 15)
+# 距離 - 解像度を下げる
+conf.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 15)
+
+# stream開始
+pipe = rs.pipeline()
+profile = pipe.start(conf)
+
+try:
+    # 最初の数フレームは安定しないことがあるのでスキップ
+    for _ in range(10):
+        pipe.wait_for_frames()
+    
+    while True:
+        # タイムアウト時間を延長
+        frames = pipe.wait_for_frames(timeout_ms=10000)
+        
+        # frameデータを取得
+        color_frame = frames.get_color_frame()
+        depth_frame = frames.get_depth_frame()
+        
+        if not color_frame or not depth_frame:
+            continue
+        
+        # 画像データに変換
+        color_image = np.asanyarray(color_frame.get_data())
+        
+        # 距離情報をカラースケール画像に変換する
+        depth_color_frame = rs.colorizer().colorize(depth_frame)
+        depth_image = np.asanyarray(depth_color_frame.get_data())
+        
+        # 画面の中央のピクセル座標を指定
+        width = depth_frame.get_width()
+        height = depth_frame.get_height()
+        target_x = int(width / 2)
+        target_y = int(height / 2)
+        
+        # get_distance(x, y) で (x, y) の距離 [メートル] を取得
+        distance = depth_frame.get_distance(target_x, target_y)
+        print(f"画面中央 ({target_x}, {target_y}) までの距離: {distance:.2f} メートル")
+
+except Exception as e:
+    print(f"エラーが発生しました: {e}")
+finally:
+    pipe.stop()
+    print("ストリーミングを停止しました。")
