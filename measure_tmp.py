@@ -4,6 +4,7 @@ import numpy as np
 # カメラの設定
 conf = rs.config()
 # RGB - 解像度を下げる
+
 conf.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 15)
 # 距離 - 解像度を下げる
 conf.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 15)
