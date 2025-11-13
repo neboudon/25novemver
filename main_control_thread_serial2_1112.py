@@ -6,13 +6,13 @@ import threading
 
 # === [修正箇所 START] ===
 # 統合された関数と、カメラ取得用の関数をインポート
-from robot_vision_thread_headless1 import camera_capture_thread, vision_processing_thread
+from robot_vision_debug import camera_capture_thread, vision_processing_thread
 # === [修正箇所 END] ===
 
 
 ### --- 設定 ---
 STEERING_THRESHOLD = 20 
-CAMERA_INDEX = 0 # 使用するカメラは1台だけ
+CAMERA_INDEX = 2 # 使用するカメラは1台だけ
 MAIN_LOOP_WAIT_MS = 50 
 MAIN_LOOP_WAIT_SEC = MAIN_LOOP_WAIT_MS / 1000.0 
 SERIAL_PORT = '/dev/ttyS0' 
