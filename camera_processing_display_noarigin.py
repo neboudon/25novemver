@@ -31,7 +31,7 @@ class WallDetector:
         self.depth_scale = depth_sensor.get_depth_scale()
 
         # アライメントオブジェクト
-        self.align = rs.align(rs.stream.color)
+        #self.align = rs.align(rs.stream.color)
 
         # --- ROIの定義 (固定) ---
         # 画面の上下100ピクセル、幅30ピクセルを「壁」検出領域とする
@@ -80,10 +80,10 @@ class WallDetector:
         """
         try:
             frames = self.pipeline.wait_for_frames()
-            aligned_frames = self.align.process(frames)
+            #aligned_frames = self.align.process(frames)
 
-            depth_frame = aligned_frames.get_depth_frame()
-            color_frame = aligned_frames.get_color_frame()
+            depth_frame = frames.get_depth_frame()
+            color_frame = frames.get_color_frame()
 
             if not depth_frame or not color_frame:
                 return None, None
