@@ -31,7 +31,7 @@ def main():
     
     try:
         # 1. 画像処理クラスのインスタンスを作成
-        detector = camera_processing.WallDetector(fps=CONTROL_FPS)
+        detector = camera_processing_display_noarigin.WallDetector(fps=CONTROL_FPS)
         
         # 2. シリアルポートの初期化
         serial_port = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=1.0)
