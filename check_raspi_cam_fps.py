@@ -64,8 +64,8 @@ def realsense_capture_thread(shared_state, lock):
             elapsed_time = current_time - last_update_time
             if elapsed_time < MIN_INTERVAL:
                 sleep_time = MIN_INTERVAL - elapsed_time # 「目標時間 - 経過時間」が正しい待機時間
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
             #if current_time - last_update_time < MIN_INTERVAL:
             #    time.sleep(current_time - last_update_time)
             last_update_time = current_time
