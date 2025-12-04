@@ -260,6 +260,29 @@ def wall_control_thread(shared_state, lock, ser, wall_side,serial_lock):
             time.sleep(wait_time)
 
     print("\n[壁制御]: 終了しました。")
+    if all_process_times:
+            print("\n" + "="*40)
+            print(" FINAL BENCHMARK REPORT")
+            print("="*40)
+            print("--- Per Frame Processing Time ---")
+            # 全データの表示ループ
+            for i, t in enumerate(all_process_times):
+                print(f"Frame {i+1:04d}: {t:.3f} ms")
+            
+            # 統計の計算
+            total_avg = sum(all_process_times) / len(all_process_times)
+            max_time = max(all_process_times)
+            min_time = min(all_process_times)
+            
+            print("-" * 40)
+            print(f"Total Frames Processed : {len(all_process_times)}")
+            print(f"Average Processing Time: {total_avg:.3f} ms")
+            print(f"Max Processing Time    : {max_time:.3f} ms")
+            print(f"Min Processing Time    : {min_time:.3f} ms")
+            print("="*40)
+    else:
+        print("\nNo frames processed.")
+    
 
 # ---------------------------------------------------------
 # メイン実行関数
@@ -329,6 +352,7 @@ def main():
         
         # スレッドが終了してレポートを出すのを待つ
         t.join()
+        t_wall.join()
         cv2.destroyAllWindows()
         print("[Main] Program finished.")
 
