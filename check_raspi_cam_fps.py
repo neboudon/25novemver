@@ -61,8 +61,13 @@ def realsense_capture_thread(shared_state, lock):
             
             # 2. FPS間引き処理 (ターゲットFPS制御)
             current_time = time.perf_counter()
-            if current_time - last_update_time < MIN_INTERVAL:
-                time.sleep(current_time - last_update_time)
+            elapsed_time = current_time - last_update_time
+            if elapsed_time < MIN_INTERVAL:
+                sleep_time = MIN_INTERVAL - elapsed_time # 「目標時間 - 経過時間」が正しい待機時間
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+            #if current_time - last_update_time < MIN_INTERVAL:
+            #    time.sleep(current_time - last_update_time)
             last_update_time = current_time
             
             # ==========================================
@@ -186,8 +191,8 @@ def main():
                     shared_state['new_frame_flag'] = False # フラグを下ろす
             
             # フレームがあれば表示
-            if frame_to_show is not None:
-                cv2.imshow("Main Thread View", frame_to_show)
+            #if frame_to_show is not None:
+            #    cv2.imshow("Main Thread View", frame_to_show)
             
             # キー入力待ち (1ms)
             key = cv2.waitKey(1) & 0xFF
