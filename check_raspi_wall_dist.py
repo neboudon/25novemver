@@ -273,7 +273,8 @@ def main():
         'latest_depth': None,
         'depth_scale': 0,
         'new_frame_flag': False,
-        'stop': False  # スレッド停止用フラグ
+        'stop': False,  # スレッド停止用フラグ
+        'stop_wall_control': False
     }
     
     print("=== Main Process Start ===")
@@ -284,7 +285,7 @@ def main():
     
     ser = None  # シリアルポートオブジェクト (必要に応じて初期化)
     serial_lock = threading.Lock()  # シリアル通信ロック    
-    t_wall = threading.Thread(target=wall_control_thread, args=(shared_state, lock, ser, 'left', serial_lock))
+    t_wall = threading.Thread(target=wall_control_thread, args=(shared_state, lock, ser, 'right', serial_lock))
     t_wall.start()
     
     # 起動待ち (少し待機してカメラが安定するのを待つ)
