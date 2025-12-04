@@ -126,6 +126,7 @@ def main():
             inverted_array = 255 - gray_frame
             total_weight = np.sum(inverted_array)
             image_center_x = width // 2
+            center_x = image_center_x
             if total_weight > 0:
                 x_coords = np.arange(width)
                 center_x = np.sum(x_coords * np.sum(inverted_array, axis=0)) / total_weight
