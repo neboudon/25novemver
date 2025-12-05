@@ -9,7 +9,7 @@ import threading
 # ---------------------------------------------------------
 def realsense_capture_thread(shared_state, lock):
     # --- 設定・パラメータ ---
-    color_w, color_h = 640, 360  
+    color_w, color_h = 640, 480  
     depth_w, depth_h = 640, 480
     HARDWARE_FPS = 60    
     TARGET_FPS = 40      
