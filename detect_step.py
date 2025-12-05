@@ -119,7 +119,13 @@ def main():
     t.start()
     time.sleep(2.0)
     print("=== Detection Start (Mode: Upward Step/Obstacle) ===")
-
+    
+    frame_count = 0
+    start_time = time.time()
+    prev_time = start_time
+    process_times = []
+    all_process_times = []
+    
     try:
         while True:
             color_img = None
@@ -138,10 +144,10 @@ def main():
                 continue
             
             # --- アルゴリズム計測開始 ---
-            algo_start = time.perf_counter()
+            proc_start = time.perf_counter()
             
             h, w = depth_img.shape
-            strip_width = 40
+            strip_width = 60
             center_x = w // 2
             x_start = center_x - (strip_width // 2)
             x_end = center_x + (strip_width // 2)
@@ -222,12 +228,32 @@ def main():
                 obstacle_detected_end = scan_end
 
             # --- アルゴリズム計測終了 ---
-            algo_end = time.perf_counter()
-            proc_time_ms = (algo_end - algo_start) * 1000
+            proc_end = time.perf_counter()
+            proc_time_ms = (proc_end - proc_start) * 1000
+            all_process_times.append(proc_time_ms)
+            frame_count += 1
+            
+            curr_time = time.time()
+            if curr_time - prev_time >= 1.0:
+                fps = frame_count / (curr_time - prev_time)
+                recent_avg = sum(all_process_times[-100:]) / len(all_process_times[-100:]) if all_process_times else 0
+                print(f"[Main] FPS: {fps:.2f}, Recent Avg Proc Time: {recent_avg:.2f}ms")
+                frame_count = 0
+                prev_time = curr_time
 
             # --- 描画処理 ---
             # 緑枠（解析エリア）
             cv2.rectangle(color_img, (x_start, 0), (x_end, h), (0, 255, 0), 1)
+            
+            # ▼▼▼ 追加コード: 探索リミットライン(上から1/3) ▼▼▼
+            limit_y = h // 3
+            # 黄色い横線を引く
+            cv2.line(color_img, (0, limit_y), (w, limit_y), (0, 255, 255), 1)
+            cv2.line(color_img, (0, h-45), (w, h-45), (0, 255, 255), 1)
+            # 文字を表示
+            cv2.putText(color_img, "Scan Limit (1/3)", (10, limit_y - 10), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+            # ▲▲▲ 追加コードここまで ▲▲▲
             
             # 障害物検知時の表示
             if obstacle_detected_start is not None:
@@ -261,6 +287,29 @@ def main():
         with lock: shared_state['stop'] = True
         t.join()
         cv2.destroyAllWindows()
+        
+        if all_process_times:
+            print("\n" + "="*40)
+            print(" FINAL BENCHMARK REPORT")
+            print("="*40)
+            print("--- Per Frame Processing Time ---")
+            # 全データの表示ループ
+            for i, t in enumerate(all_process_times):
+                print(f"Frame {i+1:04d}: {t:.3f} ms")
+            
+            # 統計の計算
+            total_avg = sum(all_process_times) / len(all_process_times)
+            max_time = max(all_process_times)
+            min_time = min(all_process_times)
+            
+            print("-" * 40)
+            print(f"Total Frames Processed : {len(all_process_times)}")
+            print(f"Average Processing Time: {total_avg:.3f} ms")
+            print(f"Max Processing Time    : {max_time:.3f} ms")
+            print(f"Min Processing Time    : {min_time:.3f} ms")
+            print("="*40)
+        else:
+            print("\nNo frames processed.")
 
 if __name__ == "__main__":
     main()
