@@ -3,7 +3,7 @@ import serial
 import threading
 
 SERIAL_PORT = '/dev/ttyS0' 
-SERIAL_BAUDRATE = 921600
+SERIAL_BAUDRATE = 1000000
 
 # ===================================================================
 # スレッド0:コマンド送信スレッド 
