@@ -3,15 +3,11 @@ import numpy as np
 import time
 import socket
 
-# ここを修正：ffmpeg経由の場合は V4L2 バックエンドを明示したほうが安定します
-# もしエラーが出る場合は cv2.CAP_V4L2 を削除して 0 だけにしてください
+# ffmpegで /dev/video0 に流している場合
 CAMERA_INDEX = 0
 
-# 送信したいサイズを指定
-SEND_WIDTH = 640
-SEND_HEIGHT = 480
-
 def compress_frame(frame, quality):
+    # 画質設定（30くらいが速度と画質のバランスが良いです）
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
     result, encimg = cv2.imencode('.jpg', frame, encode_param)
     if result:
@@ -22,62 +18,61 @@ def compress_frame(frame, quality):
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
-    # 送信先設定（環境に合わせて変更してください）
+    # 相手のIPアドレス
     client_ip = '192.168.10.222' 
     client_port = 5005 
     address = (client_ip, client_port)
     
-    print(f"送信先アドレス: {address[0]}, ポート: {address[1]}")
-    
-    # UDP送信なので connect は必須ではありませんが、しておくと send だけ書けるようになります
+    print(f"送信先: {address}")
     sock.connect(address) 
     
-    print("カメラを起動します。")
-    # V4L2バックエンドを明示的に指定（推奨）
+    print("カメラを起動します（ffmpegが動いているか確認してください）")
+    # V4L2指定
     cap = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2)
     
+    # バッファサイズを最小にする（遅延対策）
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
     if not cap.isOpened():
         print("カメラを開けません。")
         return
-    print("カメラ起動完了")
+    print("送信開始。停止するには Ctrl+C を押してください。")
 
     try:
         while True:
             ret, frame = cap.read()
             if not ret:
-                print("フレームを取得できません。")
-                break
+                print("フレーム取得失敗")
+                time.sleep(0.1) # エラー時は少し休む
+                continue
             
-            # 【重要】ここで強制的にリサイズします
-            # cap.set が効かないため、読み込んだ画像を小さく加工します
-            frame = cv2.resize(frame, (SEND_WIDTH, SEND_HEIGHT))
+            # 【変更点】ffmpeg側でリサイズしているので、Pythonでの resize は削除！
+            # どうしてもサイズ変更が必要な場合のみ以下を使う
+            # frame = cv2.resize(frame, (640, 480))
             
-            # 画質設定（サイズが大きい場合はここを 30 くらいまで下げると軽くなります）
-            compressed_frame = compress_frame(frame, quality=50)
+            # 画質を30に設定
+            compressed_frame = compress_frame(frame, quality=30)
             
             if compressed_frame is None:
                 continue
             
-            # データサイズチェック
-            data_size = len(compressed_frame)
-            if data_size > 65507:
-                print(f"サイズ過大によりスキップ: {data_size} bytes (画質を下げてください)")
+            # サイズチェック
+            if len(compressed_frame) > 65507:
+                print("サイズオーバー")
                 continue
             
             sock.send(compressed_frame)
             
-            # 送信側の画面にも表示（不要ならコメントアウト）
-            cv2.imshow('Sender Frame', frame)
+            # 【変更点】ラズパイ側での表示（imshow）は行わない！
+            # これが一番重い原因です。
             
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-            
+    except KeyboardInterrupt:
+        print("\n停止しました。")
     except Exception as e:
-        print(f"エラーが発生しました: {e}")
+        print(f"エラー: {e}")
     
     finally:    
         cap.release()
-        cv2.destroyAllWindows()
         sock.close()
         
 if __name__ == "__main__":
