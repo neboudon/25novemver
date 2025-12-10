@@ -609,3 +609,6 @@ def main():
         
         if sleep_time > 0:
             time.sleep(sleep_time)
+            
+if __name__ == "__main__":
+    main()
