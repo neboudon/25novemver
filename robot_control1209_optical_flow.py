@@ -59,8 +59,10 @@ class CameraStream:
         self.config = rs.config()
         self.config.enable_stream(rs.stream.color, color_w, color_h, rs.format.bgr8, 60)
         self.config.enable_stream(rs.stream.depth, depth_w, depth_h, rs.format.z16, 60)
-        self.pipeline.start(self.config)
+        #self.pipeline.start(self.config)
+        profile = self.pipeline.start(self.config)
         self.depth_sensor = self.pipeline.get_device().first_depth_sensor()
+        self.depth_sensor = profile.get_device().first_depth_sensor()
         self.depth_scale = self.depth_sensor.get_depth_scale()
         self.latest_color_frame = None
         self.latest_depth_frame = None
