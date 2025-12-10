@@ -3,16 +3,21 @@ import socket
 import time
 
 # ================= 設定エリア =================
-# ffmpegで /dev/video42 を指定した場合は 42、video0なら 0
-CAMERA_INDEX = 42 
+# ラズパイに直結したカメラは通常 0 です
+CAMERA_INDEX = 0
 
 # 送信先（受信側PC）のIPアドレスとポート
 SERVER_IP = '192.168.10.222'
 SERVER_PORT = 5005
 
+# 送信解像度（ラズパイの負荷を下げるため小さめに設定）
+WIDTH = 640
+HEIGHT = 480
+FPS = 30
+
 # 画質設定 (10-100)
-# 30くらいが速度と画質のバランスが良いです
-JPEG_QUALITY = 30
+# 30-50くらいが速度と画質のバランスが良いです
+JPEG_QUALITY = 35
 # ============================================
 
 def main():
@@ -23,36 +28,42 @@ def main():
     print(f"送信先アドレス: {address}")
     
     # カメラの起動
-    print("カメラを起動します...")
-    # Linux(ラズパイ)での動作を安定させるために CAP_V4L2 を指定
-    cap = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2)
+    print("ラズパイカメラを起動します...")
+    cap = cv2.VideoCapture(CAMERA_INDEX)
     
-    # 【重要】遅延を減らすため、バッファサイズを最小にする
+    # 【重要】ラズパイカメラの設定
+    # ハードウェア側でリサイズさせることでCPU負荷を大幅に減らします
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+    cap.set(cv2.CAP_PROP_FPS, FPS)
+    
+    # 遅延対策：バッファサイズを最小にする
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     if not cap.isOpened():
         print("エラー: カメラが開けません。")
-        print("ffmpegが実行中か、デバイス番号(42/0)が合っているか確認してください。")
+        print("以下を確認してください：")
+        print("1. カメラケーブルが正しく接続されているか")
+        print("2. (古いOSの場合) raspi-config でLegacy Cameraが有効になっているか")
         return
 
-    print("送信開始。停止するには Ctrl+C を押してください。")
+    print(f"送信開始 ({WIDTH}x{HEIGHT})。停止するには Ctrl+C を押してください。")
 
     try:
         while True:
             # フレームの読み込み
             ret, frame = cap.read()
             if not ret:
-                # 映像が来ていない場合は少し待機して再試行
+                print("フレーム取得失敗")
                 time.sleep(0.1)
                 continue
             
-            # 【補足】
-            # 手動実行のffmpegコマンドで「-vf scale=640:480」をつけていれば
-            # ここでのリサイズは不要です（CPU節約のため削除済み）。
-            # もしffmpegでリサイズしていない場合は、以下のコメントを外してください。
-            # frame = cv2.resize(frame, (640, 480))
+            # 【変更点】
+            # cap.setで解像度を指定しているので、ここで cv2.resize を呼ぶ必要はありません。
+            # 既に 640x480 で取得されています。
 
-            # JPEG圧縮
+            # JPEG圧縮 (必須)
+            # 生データだとUDPの制限(65KB)を即座に超えるため、必ず圧縮して送信します
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), JPEG_QUALITY]
             result, encimg = cv2.imencode('.jpg', frame, encode_param)
             
@@ -66,10 +77,9 @@ def main():
             if len(data) < 65507:
                 sock.sendto(data, address)
             else:
+                # 圧縮率(JPEG_QUALITY)を下げるか、解像度を下げてください
                 print(f"サイズオーバーによりスキップ: {len(data)} bytes")
             
-            # 【重要】ラズパイ側での画面表示(imshow)は重くなるので行いません
-
     except KeyboardInterrupt:
         print("\nプログラムを終了します。")
     except Exception as e:
