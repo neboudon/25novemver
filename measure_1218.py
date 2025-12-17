@@ -4,7 +4,7 @@ import numpy as np
 import threading
 import time
 
-# --- カメラ管理クラス (継承) ---
+# --- カメラ管理クラス (共通) ---
 class CameraStream:
     def __init__(self):
         self.lock = threading.Lock()
@@ -44,10 +44,11 @@ def main():
     camera = CameraStream()
     camera.start()
     
-    INTERVAL = 0.5 # 2Hz
-    MAX_DISPLAY_DIST = 4.0 # ヒートマップの最大距離(4m)
+    INTERVAL = 0.5 # 2Hz (0.5秒間隔)
+    MAX_DISPLAY_DIST = 5.0 # ヒートマップの最大距離(5m)。環境に合わせて変更してください。
     
     try:
+        print("Starting Full-Screen Heatmap (2Hz)... Press 'q' to quit.")
         while True:
             start_time = time.time()
             color_img, depth_img = camera.get_latest()
@@ -55,42 +56,46 @@ def main():
             if color_img is None or depth_img is None:
                 continue
             
-            h, w = depth_img.shape
-            # --- 1. 下半分を切り出し ---
-            roi_y_start = h // 2
-            depth_bottom = depth_img[roi_y_start:, :]
-            color_bottom = color_img[roi_y_start:, :].copy()
+            # --- 1. 全画面の距離計算 (ベクトル演算で高速化) ---
+            depth_meters = depth_img * camera.depth_scale
             
-            # --- 2. 全地点の距離を色で表現 (ヒートマップ) ---
-            # 距離を0-255のスケールに変換 (MAX_DISPLAY_DISTを上限とする)
-            depth_meters = depth_bottom * camera.depth_scale
+            # 距離を0-255のスケールに変換 (0m=赤, MAX=青 にするために反転)
+            # 0(無効値)を考慮しつつクリッピング
             depth_display = np.clip(depth_meters / MAX_DISPLAY_DIST * 255, 0, 255).astype(np.uint8)
             
-            # 色付け（JET: 青が遠く、赤が近い）
-            depth_colormap = cv2.applyColorMap(255 - depth_display, cv2.COLORMAP_JET)
+            # --- 2. ヒートマップの生成 ---
+            # JETカラーマップを適用 (青:遠い, 赤:近い)
+            heatmap = cv2.applyColorMap(255 - depth_display, cv2.COLORMAP_JET)
             
-            # --- 3. 特定地点の距離数値を表示 (1/30間隔のグリッド) ---
-            grid_step = 60 # 60ピクセルおきに数値を表示
-            for y in range(0, depth_bottom.shape[0], grid_step):
-                for x in range(0, depth_bottom.shape[1], grid_step):
+            # データが取れていない場所（距離0）を黒にする
+            heatmap[depth_img == 0] = [0, 0, 0]
+            
+            # --- 3. グリッド状に数値を表示 (視認性のため80ピクセル間隔) ---
+            grid_step = 80 
+            h, w = depth_img.shape
+            for y in range(grid_step // 2, h, grid_step):
+                for x in range(grid_step // 2, w, grid_step):
                     dist = depth_meters[y, x]
                     if dist > 0:
-                        text = f"{dist:.2f}"
-                        # ヒートマップ上に数値を白字で表示
-                        cv2.putText(depth_colormap, text, (x, y + 20), 
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+                        text = f"{dist:.1f}m"
+                        # 背景を少し暗くして文字を見やすくする（オプション）
+                        cv2.putText(heatmap, text, (x, y), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
             
-            # 元のカラー画像に「計測中」の枠を表示
-            cv2.rectangle(color_img, (0, roi_y_start), (w-1, h-1), (0, 255, 0), 2)
+            # --- 4. 表示 ---
+            # 元画像とヒートマップを水平に連結して比較表示
+            combined_view = np.hstack((color_img, heatmap))
             
-            # --- 表示 ---
-            cv2.imshow("Original (Bottom Half ROI)", color_img)
-            cv2.imshow("Bottom Half Distance Map (2Hz)", depth_colormap)
+            # 画面サイズが大きすぎる場合はリサイズ（表示用）
+            display_scale = 0.8
+            cv2.imshow("Full Screen Heatmap (Left: RGB, Right: Depth)", 
+                       cv2.resize(combined_view, None, fx=display_scale, fy=display_scale))
             
+            # 終了判定
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             
-            # 2Hz制御
+            # 2Hz制御のためのウェイト
             elapsed = time.time() - start_time
             wait_time = INTERVAL - elapsed
             if wait_time > 0:
