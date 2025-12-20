@@ -30,6 +30,7 @@ class CameraStream:
         profile = self.pipeline.start(self.config)
         self.depth_sensor = profile.get_device().first_depth_sensor()
         self.depth_scale = self.depth_sensor.get_depth_scale()
+        self.latest_frame = None
         self.latest_color_frame = None
         self.latest_depth_frame = None
         self.capture_time = 0
@@ -51,13 +52,14 @@ class CameraStream:
             now = time.time()
             
             with self.lock:
+                self.latest_frame = frames
                 self.latest_color_frame = color_image
                 self.latest_depth_frame = depth_image
                 self.capture_time = now
     
     def get_latest(self):
         with self.lock:
-            return self.latest_color_frame, self.latest_depth_frame, self.capture_time
+            return self.latest_frame, self.latest_color_frame, self.latest_depth_frame, self.capture_time
 
 
 #measure_dist2_1_1.pyのために作成した関数
@@ -116,7 +118,7 @@ def main():
     last_time_obstacle = 0
     
     while True:
-        first_color_frame, first_depth_frame, _ = camera.get_latest()
+        _, first_color_frame, first_depth_frame, _ = camera.get_latest()
         if first_depth_frame is None or first_color_frame is None:
             print("カメラの起動中...")
             time.sleep(0.1)
@@ -141,26 +143,30 @@ def main():
     
     #変数の初期化
     clahe = cv2.createCLAHE(clipLimit=CLIP_LIMIT, tileGridSize=TILE_GRID_SIZE)
-    
+    align = rs.align(rs.stream.color)
     result_img = np.zeros((resize_h, RESIZE_WIDTH, 3), dtype=np.uint8)
     
     while True:
         loop_start_time = time.time()
         
         #画像の取得
-        color_img, depth_img , img_time = camera.get_latest()
+        frame, color_img, depth_img , img_time = camera.get_latest()
         if color_img is None: continue
         
         # --- キャリブレーションフェーズ (最初の10フレーム) ---
         if calib_counter < CALIB_FRAMES_LIMIT:
-            depth_cm = depth_img.astype(float) * 0.1
+            # ここでだけアライメントを実行
+            aligned_frames = align.process(frame)
+            aligned_color_frame = aligned_frames.get_color_frame()
+            aligned_depth_frame = aligned_frames.get_depth_frame()
+            depth_cm = aligned_depth_frame.astype(float) * 0.1
             if accum_depth is None: accum_depth = np.zeros((h, w), dtype=float)
             accum_depth = np.nansum([accum_depth, depth_cm], axis=0)
             calib_counter += 1
             
-            send_motor_command(ser, "S\n") # キャリブ中も停止命令
-            cv2.putText(color_img, f"CALIBRATING... {calib_counter}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-            cv2.imshow("result_img", color_img)
+            #send_motor_command(ser, "S\n") # キャリブ中も停止命令
+            cv2.putText(aligned_color_frame, f"CALIBRATING... {calib_counter}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+            cv2.imshow("result_img", aligned_color_frame)
             if calib_counter == CALIB_FRAMES_LIMIT:
                 ref_depth = accum_depth / CALIB_FRAMES_LIMIT
             cv2.waitKey(1)
@@ -178,15 +184,18 @@ def main():
         
         # 1. 障害物検出 (15Hz)
         if (loop_start_time - last_time_obstacle) >= INTERVAL_OBSTACLE:
-            depth_cm = depth_img.astype(float) * 0.1
+            aligned_frames = align.process(frame)
+            aligned_color_frame = aligned_frames.get_color_frame()
+            aligned_depth_frame = aligned_frames.get_depth_frame()
+            depth_cm = aligned_depth_frame.astype(float) * 0.1
             # マスク外と0(欠損値)をNaNにする
             depth_cm[total_lane_mask == 0] = np.nan
             depth_cm[depth_cm == 0] = np.nan
             
-            obs_img, obs_info = process_obstacle_detection(color_img, depth_cm, ref_depth, lane_masks)
+            obs_img, obs_info = process_obstacle_detection(aligned_color_frame, depth_cm, ref_depth, lane_masks)
             
             # A. 計測エリアの半透明グレー塗り
-            overlay = color_img.copy()
+            overlay = aligned_color_frame.copy()
             cv2.fillPoly(overlay, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], (100, 100, 100))
             obs_img = cv2.addWeighted(overlay, 0.3, obs_img, 0.7, 0)
             
