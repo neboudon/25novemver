@@ -196,6 +196,7 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks):
             
         x, y, bw, bh = cv2.boundingRect(cnt)
         obj_center_x = x + (bw / 2) # 障害物の中心x座標を追加
+        diff_x = abs(w//2 - obj_center_x)
         detected_lanes = []
         blob_mask = np.zeros((h, w), dtype=np.uint8)
         cv2.drawContours(blob_mask, [cnt], -1, 255, -1)
@@ -205,7 +206,7 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks):
                 detected_lanes.append(name)
         
         dist_val = np.nanmedian(depth_cm[y:y+bh, x:x+bw])
-        detected_info.append({"lanes": detected_lanes, "dist": dist_val, "center_x": obj_center_x})
+        detected_info.append({"lanes": detected_lanes, "dist": dist_val, "center_x": obj_center_x, "diff_of_cente_x":diff_x})
         
         # 描画処理
         label = f"{'/'.join(detected_lanes)}: {dist_val:.1f}cm"
