@@ -203,11 +203,12 @@ def main():
                 depth_cm[depth_cm == 0] = np.nan
             
                 obs_img, obs_info = process_obstacle_detection(color_img_aligned, depth_cm, ref_depth, lane_masks)
-            
-                # A. 計測エリアの半透明グレー塗り
-                #overlay = color_img_aligned
-                #cv2.fillPoly(overlay, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], (100, 100, 100))
-                #obs_img = cv2.addWeighted(overlay, 0.3, obs_img, 0.7, 0)
+                
+                if obs_info:
+                    print(f"--- Obstacle Detected! ({time.strftime('%H:%M:%S')}) ---")
+                    for i, obj in enumerate(obs_info):
+                        # 例: [1] Lanes: ['CENTER', 'RIGHT'], Dist: 85.3cm, X: 340.5
+                        print(f" [{i}] Lanes: {obj['lanes']}, Dist: {obj['dist']:.1f}cm, X: {obj.get('center_x', 'N/A')}")
                 
                 # B. 外枠の描画（水色/黄色）
                 cv2.polylines(obs_img, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], True, (255, 255, 0), 2)
