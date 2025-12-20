@@ -206,7 +206,7 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks):
                 detected_lanes.append(name)
         
         dist_val = np.nanmedian(depth_cm[y:y+bh, x:x+bw])
-        detected_info.append({"lanes": detected_lanes, "dist": dist_val, "center_x": obj_center_x, "diff_of_cente_x":diff_x})
+        detected_info.append({"lanes": detected_lanes, "dist": dist_val, "center_x": obj_center_x, "diff_of_center_x":diff_x})
         
         # 描画処理
         label = f"{'/'.join(detected_lanes)}: {dist_val:.1f}cm"
