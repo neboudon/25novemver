@@ -176,7 +176,7 @@ def process_mis(color_image, resize_h, clahe):
     return steering_command, line_image
 
 # --- 障害物検出用の関数 (measure_dist2_1_1.py より移植) ---
-def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks):
+def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base_center_x):
     DIFF_THRESHOLD_CM = 10.0
     MIN_AREA = 1350
     h, w = color_image.shape[:2]
@@ -196,7 +196,7 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks):
             
         x, y, bw, bh = cv2.boundingRect(cnt)
         obj_center_x = x + (bw / 2) # 障害物の中心x座標を追加
-        diff_x = abs(w//2 - obj_center_x)
+        diff_x = abs(base_center_x - obj_center_x)
         detected_lanes = []
         blob_mask = np.zeros((h, w), dtype=np.uint8)
         cv2.drawContours(blob_mask, [cnt], -1, 255, -1)

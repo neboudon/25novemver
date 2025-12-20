@@ -102,6 +102,8 @@ def main():
     p_ri_b, p_ri_t = (w - 170, h), (get_top_x(w - 170, 50, dy, "right"), y_top)
     p_ro_b, p_ro_t = (w - 0, h), (get_top_x(w - 0, 30, dy, "right"), y_top)
 
+    base_center_x = (p_lo_b[0] + p_ro_b[0]) / 2
+    
     lane_masks = {
         "LEFT":   create_mask([p_lo_b, p_lo_t, p_li_t, p_li_b], h, w),
         "CENTER": create_mask([p_li_b, p_li_t, p_ri_t, p_ri_b], h, w),
@@ -202,7 +204,7 @@ def main():
                 depth_cm[total_lane_mask == 0] = np.nan
                 depth_cm[depth_cm == 0] = np.nan
             
-                obs_img, obs_info = process_obstacle_detection(color_img_aligned, depth_cm, ref_depth, lane_masks)
+                obs_img, obs_info = process_obstacle_detection(color_img_aligned, depth_cm, ref_depth, lane_masks, base_center_x)
                 
                 if obs_info:
                     print(f"--- Obstacle Detected! ({time.strftime('%H:%M:%S')}) ---")
