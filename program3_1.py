@@ -14,7 +14,7 @@ SERIAL_PORT = '/dev/ttyS0'
 SERIAL_BAUDRATE = 921600  # Pico側もこれに合わせてください
 
 #func1からの関数の呼び出し
-from func3 import send_motor_command, process_cog, process_mis,process_obstacle_detection
+from func3_1 import send_motor_command, process_cog, process_mis,process_obstacle_detection
 
 #カメラ画像取得用のクラス
 class CameraStream:
