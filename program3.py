@@ -159,14 +159,19 @@ def main():
             aligned_frames = align.process(frame)
             aligned_color_frame = aligned_frames.get_color_frame()
             aligned_depth_frame = aligned_frames.get_depth_frame()
-            depth_cm = aligned_depth_frame.astype(float) * 0.1
+            
+            if not aligned_depth_frame or not aligned_color_frame:continue 
+            
+            #depth_cm = aligned_depth_frame.astype(float) * 0.1
+            depth_cm = np.asanyarray(aligned_depth_frame.get_data()).astype(float) * 0.1
+            color_img_calib = np.asanyarray(aligned_color_frame.get_data())
             if accum_depth is None: accum_depth = np.zeros((h, w), dtype=float)
             accum_depth = np.nansum([accum_depth, depth_cm], axis=0)
             calib_counter += 1
             
             #send_motor_command(ser, "S\n") # キャリブ中も停止命令
-            cv2.putText(aligned_color_frame, f"CALIBRATING... {calib_counter}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-            cv2.imshow("result_img", aligned_color_frame)
+            cv2.putText(color_img_calib, f"CALIBRATING... {calib_counter}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+            cv2.imshow("result_img", color_img_calib)
             if calib_counter == CALIB_FRAMES_LIMIT:
                 ref_depth = accum_depth / CALIB_FRAMES_LIMIT
             cv2.waitKey(1)
@@ -187,29 +192,34 @@ def main():
             aligned_frames = align.process(frame)
             aligned_color_frame = aligned_frames.get_color_frame()
             aligned_depth_frame = aligned_frames.get_depth_frame()
-            depth_cm = aligned_depth_frame.astype(float) * 0.1
-            # マスク外と0(欠損値)をNaNにする
-            depth_cm[total_lane_mask == 0] = np.nan
-            depth_cm[depth_cm == 0] = np.nan
             
-            obs_img, obs_info = process_obstacle_detection(aligned_color_frame, depth_cm, ref_depth, lane_masks)
+            if aligned_color_frame and aligned_depth_frame:
+                color_img_aligned = np.asanyarray(aligned_color_frame.get_data()).copy()
+                depth_img_aligned = np.asanyarray(aligned_depth_frame.get_data())
+                depth_cm = depth_img_aligned.astype(float) * 0.1
+                
+                # マスク外と0(欠損値)をNaNにする
+                depth_cm[total_lane_mask == 0] = np.nan
+                depth_cm[depth_cm == 0] = np.nan
             
-            # A. 計測エリアの半透明グレー塗り
-            overlay = aligned_color_frame.copy()
-            cv2.fillPoly(overlay, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], (100, 100, 100))
-            obs_img = cv2.addWeighted(overlay, 0.3, obs_img, 0.7, 0)
+                obs_img, obs_info = process_obstacle_detection(color_img_aligned, depth_cm, ref_depth, lane_masks)
             
-            # B. 外枠の描画（水色/黄色）
-            cv2.polylines(obs_img, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], True, (255, 255, 0), 2)
-            
-            # C. 内側の境界線の描画（黄色）
-            cv2.line(obs_img, p_li_b, p_li_t, (0, 255, 255), 2) # 左内境界
-            cv2.line(obs_img, p_ri_b, p_ri_t, (0, 255, 255), 2) # 右内境界
-            
-            # ここで obs_info を使った回避ロジックを将来的に書けます
-            # 例: if any(d['lanes'] == ['CENTER'] for d in obs_info): ...
-            
-            cv2.imshow("Obstacle Detection", obs_img)
+                # A. 計測エリアの半透明グレー塗り
+                overlay = aligned_color_frame.copy()
+                cv2.fillPoly(overlay, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], (100, 100, 100))
+                obs_img = cv2.addWeighted(overlay, 0.3, obs_img, 0.7, 0)
+                
+                # B. 外枠の描画（水色/黄色）
+                cv2.polylines(obs_img, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], True, (255, 255, 0), 2)
+                
+                # C. 内側の境界線の描画（黄色）
+                cv2.line(obs_img, p_li_b, p_li_t, (0, 255, 255), 2) # 左内境界
+                cv2.line(obs_img, p_ri_b, p_ri_t, (0, 255, 255), 2) # 右内境界
+                
+                # ここで obs_info を使った回避ロジックを将来的に書けます
+                # 例: if any(d['lanes'] == ['CENTER'] for d in obs_info): ...
+                
+                cv2.imshow("Obstacle Detection", obs_img)
             last_time_obstacle = loop_start_time
         
         elif((loop_start_time - last_time_cog) >= INTERVAL_COG):
