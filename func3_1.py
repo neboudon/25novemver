@@ -196,7 +196,7 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base
             
         x, y, bw, bh = cv2.boundingRect(cnt)
         obj_center_x = x + (bw / 2) # 障害物の中心x座標を追加
-        diff_x = abs(base_center_x - obj_center_x)
+        diff_x = base_center_x - obj_center_x
         """
         detected_lanes = []
         blob_mask = np.zeros((h, w), dtype=np.uint8)
