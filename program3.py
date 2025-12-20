@@ -208,7 +208,7 @@ def main():
                     print(f"--- Obstacle Detected! ({time.strftime('%H:%M:%S')}) ---")
                     for i, obj in enumerate(obs_info):
                         # 例: [1] Lanes: ['CENTER', 'RIGHT'], Dist: 85.3cm, X: 340.5
-                        print(f" [{i}] Lanes: {obj['lanes']}, Dist: {obj['dist']:.1f}cm, X: {obj.get('center_x', 'N/A')}, diff_x:{obj.get("diff_of_center_x", 'N/A')} ")
+                        print(f" [{i}] Lanes: {obj['lanes']}, Dist: {obj['dist']:.1f}cm, X: {obj.get('center_x', 'N/A')}, diff_x:{obj.get('diff_of_center_x', 'N/A')} ")
                 
                 # B. 外枠の描画（水色/黄色）
                 cv2.polylines(obs_img, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], True, (255, 255, 0), 2)
