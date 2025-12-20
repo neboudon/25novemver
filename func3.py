@@ -212,6 +212,6 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base
         label = f"{'/'.join(detected_lanes)}: {dist_val:.1f}cm"
         cv2.rectangle(color_image, (x, y), (x + bw, y + bh), (0, 0, 255), 2)
         cv2.putText(color_image, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-        cv2.line(color_image, (int(base_center_x), 0), (int(base_center_x), h), (255, 0, 0), 2)
+    cv2.line(color_image, (int(base_center_x), 0), (int(base_center_x), h), (255, 0, 0), 2)
         
     return color_image, detected_info
