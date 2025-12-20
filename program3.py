@@ -185,6 +185,18 @@ def main():
             
             obs_img, obs_info = process_obstacle_detection(color_img, depth_cm, ref_depth, lane_masks)
             
+            # A. 計測エリアの半透明グレー塗り
+            overlay = color_img.copy()
+            cv2.fillPoly(overlay, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], (100, 100, 100))
+            obs_img = cv2.addWeighted(overlay, 0.3, obs_img, 0.7, 0)
+            
+            # B. 外枠の描画（水色/黄色）
+            cv2.polylines(obs_img, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], True, (255, 255, 0), 2)
+            
+            # C. 内側の境界線の描画（黄色）
+            cv2.line(obs_img, p_li_b, p_li_t, (0, 255, 255), 2) # 左内境界
+            cv2.line(obs_img, p_ri_b, p_ri_t, (0, 255, 255), 2) # 右内境界
+            
             # ここで obs_info を使った回避ロジックを将来的に書けます
             # 例: if any(d['lanes'] == ['CENTER'] for d in obs_info): ...
             
