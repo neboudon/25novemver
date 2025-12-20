@@ -194,7 +194,7 @@ def main():
             aligned_depth_frame = aligned_frames.get_depth_frame()
             
             if aligned_color_frame and aligned_depth_frame:
-                color_img_aligned = np.asanyarray(aligned_color_frame.get_data()).copy()
+                color_img_aligned = np.asanyarray(aligned_color_frame.get_data())
                 depth_img_aligned = np.asanyarray(aligned_depth_frame.get_data())
                 depth_cm = depth_img_aligned.astype(float) * 0.1
                 
@@ -205,7 +205,7 @@ def main():
                 obs_img, obs_info = process_obstacle_detection(color_img_aligned, depth_cm, ref_depth, lane_masks)
             
                 # A. 計測エリアの半透明グレー塗り
-                overlay = aligned_color_frame.copy()
+                overlay = color_img_aligned
                 cv2.fillPoly(overlay, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], (100, 100, 100))
                 obs_img = cv2.addWeighted(overlay, 0.3, obs_img, 0.7, 0)
                 
