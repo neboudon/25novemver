@@ -161,7 +161,7 @@ def main():
     target_error = 0.0
     avoidance_active = False
     last_obstacle_time = 0.0  # ★追加：最後に障害物を確認した時刻
-    AVOID_KEEP_DURATION = 1.0  # ★追加：障害物が消えてからも「1秒間」は回避を続ける
+    AVOID_KEEP_DURATION = 3.0  # ★追加：障害物が消えてからも「1秒間」は回避を続ける
     
     lane_bottom_width = p_ro_b[0] - p_lo_b[0]
     
