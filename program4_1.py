@@ -80,7 +80,7 @@ def main():
     camera.start()
     
     #処理レート(秒)
-    INTERVAL_COG = 1.0 / 10.0
+    INTERVAL_COG = 1.0 / 2.0
     INTERVAL_OBSTACLE = 1.0 / 10.0
     
     #ループ全体の処理時間
