@@ -160,6 +160,8 @@ def main():
     #外に移動
     target_error = 0.0
     avoidance_active = False
+    last_obstacle_time = 0.0  # ★追加：最後に障害物を確認した時刻
+    AVOID_KEEP_DURATION = 1.0  # ★追加：障害物が消えてからも「1秒間」は回避を続ける
     
     lane_bottom_width = p_ro_b[0] - p_lo_b[0]
     
@@ -227,6 +229,7 @@ def main():
                 if obs_info:
                     closest = min(obs_info, key=lambda x: x['dist'])
                     if closest['dist'] < 100:
+                        last_obstacle_time = loop_start_time
                         strength = max(0, MAX_AVOID_ERROR - (abs(closest['diff_of_center_x']) * KP_AVOID))
                         direction = -1 if closest['diff_of_center_x'] > 0 else 1
                         target_error = direction * strength
@@ -238,6 +241,8 @@ def main():
                         #print(f" [{i}] Lanes: {obj['lanes']}, Dist: {obj['dist']:.1f}cm, X: {obj.get('center_x', 'N/A')}, diff_x:{obj.get('diff_of_center_x', 'N/A')} ")
                         print(f" [{i}] Dist: {obj['dist']:.1f}cm, X: {obj.get('center_x', 'N/A')}, diff_x:{obj.get('diff_of_center_x', 'N/A')} ")
                     send_command_flag = True
+                if (loop_start_time - last_obstacle_time) < AVOID_KEEP_DURATION:
+                    avoidance_active = True
                 else:
                     # 障害物がいない場合はフラグを下げる
                     avoidance_active = False
