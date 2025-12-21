@@ -216,7 +216,7 @@ def main():
                 depth_cm[total_lane_mask == 0] = np.nan
                 depth_cm[depth_cm == 0] = np.nan
             
-                obs_img, obs_info = process_obstacle_detection(color_img_aligned, depth_cm, ref_depth, lane_masks, base_center_x)
+                obs_img, obs_info = process_obstacle_detection(color_img_aligned.copy(), depth_cm, ref_depth, lane_masks, base_center_x)
                 
                 if obs_info:
                     closest = min(obs_info, key=lambda x: x['dist'])
@@ -236,8 +236,8 @@ def main():
                 cv2.polylines(obs_img, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], True, (255, 255, 0), 2)
                 
                 # C. 内側の境界線の描画（黄色）
-                cv2.line(obs_img, p_li_b, p_li_t, (0, 255, 255), 2) # 左内境界
-                cv2.line(obs_img, p_ri_b, p_ri_t, (0, 255, 255), 2) # 右内境界
+                #cv2.line(obs_img, p_li_b, p_li_t, (0, 255, 255), 2) # 左内境界
+                #cv2.line(obs_img, p_ri_b, p_ri_t, (0, 255, 255), 2) # 右内境界
                 
                 # ここで obs_info を使った回避ロジックを将来的に書けます
                 # 例: if any(d['lanes'] == ['CENTER'] for d in obs_info): ...
@@ -254,7 +254,7 @@ def main():
             
             #消失点検出の実行
             #final_cmd = process_mis(color_img, resize_h, clahe)
-            target_error, _ = process_mis(color_img, resize_h, clahe)
+            target_error, result_img = process_mis(color_img, resize_h, clahe)
             
             #フラグの更新
             last_time_cog = loop_start_time #最終処理時間の更新
