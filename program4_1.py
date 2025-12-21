@@ -161,6 +161,8 @@ def main():
     target_error = 0.0
     avoidance_active = False
     
+    lane_bottom_width = p_ro_b[0] - p_lo_b[0]
+    
     while True:
         loop_start_time = time.time()
         
@@ -220,7 +222,7 @@ def main():
                 depth_cm[total_lane_mask == 0] = np.nan
                 depth_cm[depth_cm == 0] = np.nan
             
-                obs_img, obs_info = process_obstacle_detection(color_img_aligned.copy(), depth_cm, ref_depth, lane_masks, base_center_x)
+                obs_img, obs_info = process_obstacle_detection(color_img_aligned.copy(), depth_cm, ref_depth, lane_masks, base_center_x,lane_bottom_width)
                 
                 if obs_info:
                     closest = min(obs_info, key=lambda x: x['dist'])
