@@ -179,8 +179,8 @@ def process_mis(color_image, resize_h, clahe):
     return missing_difference, line_image
 
 # --- 障害物検出用の関数 (measure_dist2_1_1.py より移植) ---
-def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base_center_x):
-    DIFF_THRESHOLD_CM = 10.0
+def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base_center_x,lane_bottom_width):
+    DIFF_THRESHOLD_CM = 15.0
     MIN_AREA = 1350
     MAX_AREA = 10000
     h, w = color_image.shape[:2]
@@ -200,7 +200,7 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base
         
         x, y, bw, bh = cv2.boundingRect(cnt)
         
-        if bw > (w * 0.5):
+        if bw > (lane_bottom_width * 0.5):
             continue
         
         obj_center_x = x + (bw / 2) # 障害物の中心x座標を追加
