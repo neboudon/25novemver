@@ -122,7 +122,7 @@ def main():
     #障害物回避のためのパラメータ
     MAX_AVOID_ERROR = 30.0  # 真正面に障害物がある時の回避偏差（最大ハンドル角に相当）
     KP_AVOID = 0.2          # 障害物が横にズレている時に回避を緩める係数
-    ALPHA = 0.75            # スムージング係数（1.0に近いほど復帰がゆっくりになる）
+    ALPHA = 0.70            # スムージング係数（1.0に近いほど復帰がゆっくりになる）
     smoothed_error = 0.0    # 保持用の変数
     
     # 現在の速度差を保持する変数 (ループの外で初期化)
@@ -161,7 +161,7 @@ def main():
     target_error = 0.0
     avoidance_active = False
     last_obstacle_time = 0.0  # ★追加：最後に障害物を確認した時刻
-    AVOID_KEEP_DURATION = 3.0  # ★追加：障害物が消えてからも「1秒間」は回避を続ける
+    AVOID_KEEP_DURATION = 5.0  # ★追加：障害物が消えてからも「1秒間」は回避を続ける
     
     lane_bottom_width = p_ro_b[0] - p_lo_b[0]
     
