@@ -157,11 +157,15 @@ def main():
     align = rs.align(rs.stream.color)
     result_img = np.zeros((resize_h, RESIZE_WIDTH, 3), dtype=np.uint8)
     
+    #外に移動
+    target_error = 0.0
+    avoidance_active = False
+    
     while True:
         loop_start_time = time.time()
         
-        target_error = 0.0
-        avoidance_active = False
+        #target_error = 0.0
+        #avoidance_active = False
         
         #画像の取得
         frame, color_img, depth_img , img_time = camera.get_latest()
@@ -232,6 +236,9 @@ def main():
                         #print(f" [{i}] Lanes: {obj['lanes']}, Dist: {obj['dist']:.1f}cm, X: {obj.get('center_x', 'N/A')}, diff_x:{obj.get('diff_of_center_x', 'N/A')} ")
                         print(f" [{i}] Dist: {obj['dist']:.1f}cm, X: {obj.get('center_x', 'N/A')}, diff_x:{obj.get('diff_of_center_x', 'N/A')} ")
                     send_command_flag = True
+                else:
+                    # 障害物がいない場合はフラグを下げる
+                    avoidance_active = False
                 # B. 外枠の描画（水色/黄色）
                 cv2.polylines(obs_img, [np.array([p_lo_b, p_lo_t, p_ro_t, p_ro_b], np.int32)], True, (255, 255, 0), 2)
                 
