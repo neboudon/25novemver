@@ -182,6 +182,7 @@ def process_mis(color_image, resize_h, clahe):
 def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base_center_x):
     DIFF_THRESHOLD_CM = 10.0
     MIN_AREA = 1350
+    MAX_AREA = 10000
     h, w = color_image.shape[:2]
     
     # 基準との差分計算
@@ -196,8 +197,12 @@ def process_obstacle_detection(color_image, depth_cm, ref_depth, lane_masks,base
     for cnt in contours:
         if cv2.contourArea(cnt) < MIN_AREA:
             continue
-            
+        
         x, y, bw, bh = cv2.boundingRect(cnt)
+        
+        if bw > (w * 0.5):
+            continue
+        
         obj_center_x = x + (bw / 2) # 障害物の中心x座標を追加
         diff_x = obj_center_x - base_center_x 
         """
